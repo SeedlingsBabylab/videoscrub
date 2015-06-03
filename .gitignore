@@ -1,0 +1,7 @@
+*.pyc
+*.swp
+*.o
+*.so
+*.DS_Store
+.idea
+
