@@ -1,7 +1,6 @@
 from Tkinter import *
 import tkFileDialog
 
-
 import os
 import csv
 import subprocess as sp
@@ -91,6 +90,7 @@ class MainWindow:
         print "video regions: " + str(self.video_regions)
 
         self.audio_frame_regions = self.ms_to_s(self.audio_regions)
+        self.video_frame_regions = self.ms_to_s(self.video_regions)
 
         if self.video_file and self.timestamp_filepath:
             self.scrub_audio()
@@ -102,7 +102,7 @@ class MainWindow:
 
         print "scrubbing audio regions...."
 
-        if_statements = self.build_comparison_commands()
+        if_statements = self.build_audio_comparison_commands()
 
         command = ['ffmpeg',
                    '-i',
@@ -111,7 +111,7 @@ class MainWindow:
                    'volume=\'if({},0,1)\':eval=frame'.format(if_statements),
                    '-c:a', "aac",
                    '-strict', '-2',
-                   "data/output.mp4"
+                   "temp/audio_scrub_output.mp4"
                    ]
 
         command_string = ""
@@ -127,9 +127,42 @@ class MainWindow:
         print "command: " + str(command)
 
     def scrub_video(self):
-        print "lorem ipsum"
 
-    def build_comparison_commands(self):
+        between_statements = ""
+
+        for index, region in enumerate(self.video_frame_regions):
+            statement = "between(t,{},{})".format(region[0],region[1])
+            if index == len(self.video_frame_regions) - 1:
+                between_statements += statement
+            else:
+                between_statements += statement + "+"
+
+        command = ['ffmpeg',
+                   '-i',
+                   'temp/audio_scrub_output.mp4',   # we're using the output from the audio scrub
+                   '-i',
+                   'data/black640x368.png',
+                   '-filter_complex',
+                   '\"[0:v][1:v] overlay=0:0:enable=\'{}\'\"'.format(between_statements),
+                   '-pix_fmt',
+                   'yuv420p',
+                   '-c:a',
+                   'copy',
+                   'data/output.mp4']
+
+        command_string = ""
+
+        for element in command:
+            command_string += " " + element
+
+        print "command: " + command_string
+
+        pipe = sp.Popen(command_string, stdout=sp.PIPE, bufsize=10**8, shell=True)
+        pipe.communicate()  # blocks until the subprocess is complete
+
+        os.remove("data/audio_scrub_output.mp4")
+
+    def build_audio_comparison_commands(self):
         """
         This takes the audio regions (in frame onset/offset format)
         and builds a compounded list of if statements that will be
