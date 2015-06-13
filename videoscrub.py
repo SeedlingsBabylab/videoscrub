@@ -90,7 +90,7 @@ class MainWindow:
         print "audio regions: " + str(self.audio_regions)
         print "video regions: " + str(self.video_regions)
 
-        self.audio_frame_regions = self.ms_to_frames(self.audio_regions, 25)
+        self.audio_frame_regions = self.ms_to_s(self.audio_regions)
 
         if self.video_file and self.timestamp_filepath:
             self.scrub_audio()
@@ -102,92 +102,74 @@ class MainWindow:
 
         print "scrubbing audio regions...."
 
-        temp_files = []
+        if_statements = self.build_comparison_commands()
 
-        out = 'temp/temp_audio1.mp4'
+        command = ['ffmpeg',
+                   '-i',
+                   self.video_file,
+                   '-af',
+                   'volume=\'if({},0,1)\':eval=frame'.format(if_statements),
+                   '-c:a', "aac",
+                   '-strict', '-2',
+                   "data/output.mp4"
+                   ]
 
-        temp_files.append(out)
+        command_string = ""
 
-        for index, region in enumerate(self.audio_frame_regions):
+        for element in command:
+            command_string += " " + element
 
-            if index == 0:
-                command = ['ffmpeg',
-                            '-i',
-                            self.video_file,
-                            '-af',
-                            'volume=volume=\'if(gt(n,{})*lt(n,{}),0,1)\':eval=frame'.format(region[0], region[1]),
-                            '-c:a', "aac",
-                            '-strict', '-2',
-                            out
-                           ]
+        print "command: " + command_string
 
-                pipe = sp.Popen(command, stdout=sp.PIPE, bufsize=10**8)
-                pipe.communicate()  # blocks until the subprocess is complete
-                print "command " + str(index) + ": " + str(command)
+        pipe = sp.Popen(command, stdout=sp.PIPE, bufsize=10**8)
+        pipe.communicate()  # blocks until the subprocess is complete
 
-            elif index != len(self.audio_frame_regions) - 1:
-                temp = 'temp/temp_audio{}.mp4'.format(index)
-                out = 'temp/temp_audio{}.mp4'.format(index + 1)
-
-                temp_files.append(out)
-
-                command = ['ffmpeg',
-                            '-i',
-                            temp,
-                            '-af',
-                            'volume=volume=\'if(gt(n,{})*lt(n,{}),0,1)\':eval=frame'.format(region[0], region[1]),
-                            '-c:a', "aac",
-                            '-strict', '-2',
-                            out
-                           ]
-
-                pipe = sp.Popen(command, stdout=sp.PIPE, bufsize=10**8)
-                pipe.communicate()  # blocks until the subprocess is complete
-                print "command " + str(index) + ": " + str(command)
-
-            elif index == len(self.audio_frame_regions) - 1:
-                temp = 'temp/temp_audio{}.mp4'.format(index)
-                out = 'data/final_out.mp4'
-
-                command = ['ffmpeg',
-                            '-i',
-                            temp,
-                            '-af',
-                            'volume=volume=\'if(gt(n,{})*lt(n,{}),0,1)\':eval=frame'.format(region[0], region[1]),
-                            '-c:a', "aac",
-                            '-strict', '-2',
-                            out
-                           ]
-
-
-                pipe = sp.Popen(command, stdout=sp.PIPE, bufsize=10**8)
-                pipe.communicate()  # blocks until the subprocess is complete
-                print "command " + str(index) + ": " + str(command)
-
-        for temp in temp_files:     # delete all the temporary/intermediate files
-            os.remove(temp)
-
+        print "command: " + str(command)
 
     def scrub_video(self):
         print "lorem ipsum"
 
-    def ms_to_frames(self, timestamps, fps):
+    def build_comparison_commands(self):
+        """
+        This takes the audio regions (in frame onset/offset format)
+        and builds a compounded list of if statements that will be
+        part of the command that is piped to ffmpeg. They will end
+        up in the form:
+
+            gt(t,a_onset)*lt(t,a_offset)+gt(t,b_onset)*lt(t,b_offset)+gt(t,c_onset)*lt(t,c_offset)
+
+        :return: compounded if statement
+        """
+        if_statments = ""
+
+        for index, region in enumerate(self.audio_frame_regions):
+
+            statement = "gt(t,{})*lt(t,{})".format(region[0],
+                                                   region[1])
+            if index == len(self.audio_frame_regions) - 1:
+                if_statments += statement
+            else:
+                if_statments += statement + "+"
+
+        print if_statments
+        return if_statments
+
+
+    def ms_to_s(self, timestamps):
         """
         Converts a list of timestamps, originally in milliseconds,
-        to their corresponding frame values, depending on the framerate
-        of the video being edited. The input list should be a list of lists,
-        for example:
+        to their corresponding second values, The input list should
+        be a list of lists, for example:
 
                 [[1000, 2200], [3000, 5500], [8000, 14000]]
 
         :param timestamps: list of millisecond onset/offsets
-        :param fps: framerate of the video being edited
         :return: converted timestamps
         """
         results = []
 
         for region in timestamps:
-            results.append([region[0]/1000*fps, region[1]/1000*fps])
+            results.append([region[0]/1000, region[1]/1000])
 
         print "results: " + str(results)
 
