@@ -19,6 +19,7 @@ class MainWindow:
 
         self.video_filepath = None
         self.timestamp_filepath = None
+        self.output_path = None
 
         self.video_file = None
         self.video_filename = None
@@ -78,6 +79,9 @@ class MainWindow:
 
     def scrub(self):
         print self.timestamp_filepath
+
+        self.output_path = tkFileDialog.asksaveasfilename()
+
         with open(self.timestamp_filepath, "rU") as file:
             csvreader = csv.reader(file)
             for row in csvreader:
@@ -148,7 +152,7 @@ class MainWindow:
                    'yuv420p',
                    '-c:a',
                    'copy',
-                   'data/output.mp4']
+                   self.output_path]
 
         command_string = ""
 
@@ -160,7 +164,7 @@ class MainWindow:
         pipe = sp.Popen(command_string, stdout=sp.PIPE, bufsize=10**8, shell=True)
         pipe.communicate()  # blocks until the subprocess is complete
 
-        os.remove("data/audio_scrub_output.mp4")
+        os.remove("temp/audio_scrub_output.mp4")
 
     def build_audio_comparison_commands(self):
         """
