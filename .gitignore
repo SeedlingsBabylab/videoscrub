@@ -4,4 +4,4 @@
 *.so
 *.DS_Store
 .idea
-
+output/*.mp4

@@ -12,13 +12,14 @@ class MainWindow:
 
         self.root = master                  # main GUI context
         self.root.title("videoscrub")       # title of window
-        self.root.geometry("600x400")       # size of GUI window
+        self.root.geometry("600x300")       # size of GUI window
         self.main_frame = Frame(root)       # main frame into which all the Gui components will be placed
         self.main_frame.pack()              # pack() basically sets up/inserts the element (turns it on)
 
 
-        self.video_filepath = None
-        self.timestamp_filepath = None
+        self.video_path = None
+        self.mask_path = None
+        self.timestamp_path = None
         self.output_path = None
 
         self.video_file = None
@@ -33,6 +34,10 @@ class MainWindow:
                                         text="Load Video",
                                         command=self.load_video)
 
+        self.load_videomask_button = Button(self.main_frame,
+                                            text="Load Mask",
+                                            command=self.load_mask)
+
         self.load_timestamps_button = Button(self.main_frame,
                                        text="Load Timestamps",
                                        command=self.load_timestamps)
@@ -46,9 +51,11 @@ class MainWindow:
                                    command=self.scrub)
 
         self.video_loaded_label = Label(self.main_frame, text="video loaded", fg="blue")
+        self.mask_loaded_label = Label(self.main_frame, text="mask loaded", fg="black")
         self.timestamps_loaded_label = Label(self.main_frame, text="timestamps loaded", fg="red")
 
         self.load_video_button.grid(row=1, column=1)
+        self.load_videomask_button.grid(row=1, column=4)
         self.load_timestamps_button.grid(row=1, column=3)
         self.scrub_button.grid(row=2, column=2)
         self.clear_button.grid(row=3, column=2)
@@ -61,16 +68,23 @@ class MainWindow:
         print "path split 0" + str(os.path.split(self.video_file)[0])
         self.video_loaded_label.grid(row=3, column=1)
 
+    def load_mask(self):
+        self.mask_path = tkFileDialog.askopenfilename()
+        self.mask_loaded_label.grid(row=2, column=4)
+
     def load_timestamps(self):
 
-        self.timestamp_filepath = tkFileDialog.askopenfilename()
-
+        self.timestamp_path = tkFileDialog.askopenfilename()
         self.timestamps_loaded_label.grid(row=3, column=3)
 
     def clear(self):
+        # currently, the "clear" button leaves the mask
+        # filepath in place rather than clearing it, so you
+        # can reuse it for the next video you want to process
 
         self.video_file = None
-        self.timestamp_filepath = None
+        self.timestamp_path = None
+
 
         if self.video_loaded_label:
             self.video_loaded_label.grid_remove()
@@ -78,11 +92,11 @@ class MainWindow:
             self.timestamps_loaded_label.grid_remove()
 
     def scrub(self):
-        print self.timestamp_filepath
+        print self.timestamp_path
 
         self.output_path = tkFileDialog.asksaveasfilename()
 
-        with open(self.timestamp_filepath, "rU") as file:
+        with open(self.timestamp_path, "rU") as file:
             csvreader = csv.reader(file)
             for row in csvreader:
                 if row[0] == "audio":
@@ -96,7 +110,7 @@ class MainWindow:
         self.audio_frame_regions = self.ms_to_s(self.audio_regions)
         self.video_frame_regions = self.ms_to_s(self.video_regions)
 
-        if self.video_file and self.timestamp_filepath:
+        if self.video_file and self.timestamp_path:
             self.scrub_audio()
             self.scrub_video()
         else:
@@ -145,7 +159,7 @@ class MainWindow:
                    '-i',
                    'temp/audio_scrub_output.mp4',   # we're using the output from the audio scrub
                    '-i',
-                   'data/black640x368.png',
+                   self.mask_path,
                    '-filter_complex',
                    '\"[0:v][1:v] overlay=0:0:enable=\'{}\'\"'.format(between_statements),
                    '-pix_fmt',
