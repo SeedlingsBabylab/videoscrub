@@ -70,7 +70,7 @@ class MainWindow:
 
     def load_mask(self):
         self.mask_path = tkFileDialog.askopenfilename()
-        self.mask_loaded_label.grid(row=2, column=4)
+        self.mask_loaded_label.grid(row=3, column=4)
 
     def load_timestamps(self):
 
@@ -110,11 +110,11 @@ class MainWindow:
         self.audio_frame_regions = self.ms_to_s(self.audio_regions)
         self.video_frame_regions = self.ms_to_s(self.video_regions)
 
-        if self.video_file and self.timestamp_path:
+        if self.video_file and self.timestamp_path and self.mask_path:
             self.scrub_audio()
             self.scrub_video()
         else:
-            print "You need to load both the video and timestamps file before scrubbing"
+            print "You need to load the video, mask and timestamp files before scrubbing"
 
     def scrub_audio(self):
 
