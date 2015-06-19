@@ -26,7 +26,7 @@ The script must be called with 4 arguments:
 
 for example:   
 
-$ python data/input.mp4 data/muteregions.csv data/black640x368.png output/test_output.mp4   
+$ python videoscrub.py data/input.mp4 data/muteregions.csv data/black640x368.png output/test_output.mp4   
 
 
 ####region timstamps
