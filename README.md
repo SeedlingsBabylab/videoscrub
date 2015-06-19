@@ -24,6 +24,10 @@ The script must be called with 4 arguments:
 1. video mask file
 1. output file (remember to include .mp4 extension)
 
+for example:   
+
+$ python data/input.mp4 data/muteregions.csv data/black640x368.png output/test_output.mp4   
+
 
 ####region timstamps
 
