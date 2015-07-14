@@ -111,8 +111,10 @@ class MainWindow:
         self.video_frame_regions = self.ms_to_s(self.video_regions)
 
         if self.video_file and self.timestamp_path and self.mask_path:
-            self.scrub_audio()
-            self.scrub_video()
+            if self.audio_frame_regions:
+                self.scrub_audio()
+            if self.video_frame_regions:
+                self.scrub_video()
         else:
             print "You need to load the video, mask and timestamp files before scrubbing"
 
@@ -122,15 +124,29 @@ class MainWindow:
 
         if_statements = self.build_audio_comparison_commands()
 
-        command = ['ffmpeg',
+
+        # if there's only audio regions, output to final path
+        # rather than the temp folder.
+        if not self.video_frame_regions:
+            command = ['ffmpeg',
                    '-i',
                    self.video_file,
                    '-af',
                    'volume=\'if({},0,1)\':eval=frame'.format(if_statements),
                    '-c:a', "aac",
                    '-strict', '-2',
-                   "temp/audio_scrub_output.mp4"
+                   self.output_path
                    ]
+        else:
+            command = ['ffmpeg',
+                       '-i',
+                       self.video_file,
+                       '-af',
+                       'volume=\'if({},0,1)\':eval=frame'.format(if_statements),
+                       '-c:a', "aac",
+                       '-strict', '-2',
+                       "temp/audio_scrub_output.mp4"
+                       ]
 
         command_string = ""
 
@@ -155,18 +171,32 @@ class MainWindow:
             else:
                 between_statements += statement + "+"
 
-        command = ['ffmpeg',
-                   '-i',
-                   'temp/audio_scrub_output.mp4',   # we're using the output from the audio scrub
-                   '-i',
-                   self.mask_path,
-                   '-filter_complex',
-                   '\"[0:v][1:v] overlay=0:0:enable=\'{}\'\"'.format(between_statements),
-                   '-pix_fmt',
-                   'yuv420p',
-                   '-c:a',
-                   'copy',
-                   self.output_path]
+        if not self.audio_frame_regions:
+            command = ['ffmpeg',
+                       '-i',
+                       self.video_file,   # using original video
+                       '-i',
+                       self.mask_path,
+                       '-filter_complex',
+                       '\"[0:v][1:v] overlay=0:0:enable=\'{}\'\"'.format(between_statements),
+                       '-pix_fmt',
+                       'yuv420p',
+                       '-c:a',
+                       'copy',
+                       self.output_path]
+        else:
+            command = ['ffmpeg',
+                       '-i',
+                       "temp/audio_scrub_output.mp4",   # we're using the output from the audio scrub
+                       '-i',
+                       self.mask_path,
+                       '-filter_complex',
+                       '\"[0:v][1:v] overlay=0:0:enable=\'{}\'\"'.format(between_statements),
+                       '-pix_fmt',
+                       'yuv420p',
+                       '-c:a',
+                       'copy',
+                       self.output_path]
 
         command_string = ""
 
@@ -178,7 +208,10 @@ class MainWindow:
         pipe = sp.Popen(command_string, stdout=sp.PIPE, bufsize=10**8, shell=True)
         pipe.communicate()  # blocks until the subprocess is complete
 
-        os.remove("temp/audio_scrub_output.mp4")
+        if not self.audio_frame_regions:
+            return
+        else:
+            os.remove("temp/audio_scrub_output.mp4")
 
     def build_audio_comparison_commands(self):
         """

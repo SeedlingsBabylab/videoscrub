@@ -14,7 +14,6 @@ audio_frame_regions = None
 video_regions = []
 video_frame_regions = None
 
-
 def scrub():
     global audio_regions
     global video_regions
@@ -35,9 +34,14 @@ def scrub():
     audio_frame_regions = ms_to_s(audio_regions)
     video_frame_regions = ms_to_s(video_regions)
 
+
+
     if video_path and timestamp_path and mask_path:
-        scrub_audio()
-        scrub_video()
+        # make sure there are regions to mask
+        if audio_frame_regions:
+            scrub_audio()
+        if video_frame_regions:
+            scrub_video()
     else:
         print "You need to load the video, mask and timestamp files before scrubbing"
 
@@ -47,15 +51,28 @@ def scrub_audio():
 
     if_statements = build_audio_comparison_commands()
 
-    command = ['ffmpeg',
+    # if there's only audio regions, output to final path
+    # rather than the temp folder.
+    if not video_frame_regions:
+        command = ['ffmpeg',
                 '-i',
                 video_path,
                 '-af',
                 'volume=\'if({},0,1)\':eval=frame'.format(if_statements),
                 '-c:a', "aac",
                 '-strict', '-2',
-                "temp/audio_scrub_output.mp4"
+                output_path
                 ]
+    else:
+        command = ['ffmpeg',
+                    '-i',
+                    video_path,
+                    '-af',
+                    'volume=\'if({},0,1)\':eval=frame'.format(if_statements),
+                    '-c:a', "aac",
+                    '-strict', '-2',
+                    "temp/audio_scrub_output.mp4"
+                    ]
 
     command_string = ""
 
@@ -80,9 +97,11 @@ def scrub_video():
         else:
             between_statements += statement + "+"
 
-    command = ['ffmpeg',
+    if not audio_frame_regions:
+
+        command = ['ffmpeg',
                 '-i',
-                'temp/audio_scrub_output.mp4',   # we're using the output from the audio scrub
+                video_path,   # we're using the original input because there's no previous audio step
                 '-i',
                 mask_path,
                 '-filter_complex',
@@ -92,6 +111,19 @@ def scrub_video():
                 '-c:a',
                 'copy',
                 output_path]
+    else:
+        command = ['ffmpeg',
+                    '-i',
+                    'temp/audio_scrub_output.mp4',   # we're using the output from the audio scrub
+                    '-i',
+                    mask_path,
+                    '-filter_complex',
+                    '\"[0:v][1:v] overlay=0:0:enable=\'{}\'\"'.format(between_statements),
+                    '-pix_fmt',
+                    'yuv420p',
+                    '-c:a',
+                    'copy',
+                    output_path]
 
     command_string = ""
 
@@ -103,7 +135,10 @@ def scrub_video():
     pipe = sp.Popen(command_string, stdout=sp.PIPE, bufsize=10**8, shell=True)
     pipe.communicate()  # blocks until the subprocess is complete
 
-    os.remove("temp/audio_scrub_output.mp4")
+    if not audio_frame_regions:
+        return
+    else:
+        os.remove("temp/audio_scrub_output.mp4")
 
 def build_audio_comparison_commands():
     """
