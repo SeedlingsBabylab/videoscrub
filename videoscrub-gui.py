@@ -24,12 +24,12 @@ class MainWindow:
 
         self.video_file = None
         self.video_filename = None
-        
+
         self.audio_regions = []
         self.audio_frame_regions = None
         self.video_regions = []
         self.video_frame_regions = None
-        
+
         self.load_video_button = Button(self.main_frame,
                                         text="Load Video",
                                         command=self.load_video)
@@ -84,10 +84,13 @@ class MainWindow:
 
         self.video_file = None
         self.timestamp_path = None
+        self.mask_path = None
 
 
         if self.video_loaded_label:
             self.video_loaded_label.grid_remove()
+        if self.mask_loaded_label:
+            self.mask_loaded_label.grid_remove()
         if self.timestamps_loaded_label:
             self.timestamps_loaded_label.grid_remove()
 
