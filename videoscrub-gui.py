@@ -60,6 +60,8 @@ class MainWindow:
         self.scrub_button.grid(row=2, column=2)
         self.clear_button.grid(row=3, column=2)
 
+        self.temp_audio_scrub_output = ""
+
 
     def load_video(self):
         self.video_file = tkFileDialog.askopenfilename()
@@ -141,6 +143,11 @@ class MainWindow:
                    self.output_path
                    ]
         else:
+
+            output_name = os.path.basename(self.output_path).replace(".mp4", "")
+            output_name = "temp_audio_scrub_" + output_name + ".mp4"
+            self.temp_audio_scrub_output = os.path.join("temp", output_name)
+
             command = ['ffmpeg',
                        '-i',
                        self.video_file,
@@ -148,7 +155,7 @@ class MainWindow:
                        'volume=\'if({},0,1)\':eval=frame'.format(if_statements),
                        '-c:a', "aac",
                        '-strict', '-2',
-                       "temp/audio_scrub_output.mp4"
+                       self.temp_audio_scrub_output
                        ]
 
         command_string = ""
@@ -190,7 +197,7 @@ class MainWindow:
         else:
             command = ['ffmpeg',
                        '-i',
-                       "temp/audio_scrub_output.mp4",   # we're using the output from the audio scrub
+                       self.temp_audio_scrub_output,   # we're using the output from the audio scrub
                        '-i',
                        self.mask_path,
                        '-filter_complex',
@@ -214,7 +221,7 @@ class MainWindow:
         if not self.audio_frame_regions:
             return
         else:
-            os.remove("temp/audio_scrub_output.mp4")
+            os.remove(self.temp_audio_scrub_output)
 
     def build_audio_comparison_commands(self):
         """
