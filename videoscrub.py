@@ -14,6 +14,9 @@ audio_frame_regions = None
 video_regions = []
 video_frame_regions = None
 
+temp_audio_scrub = ""
+
+
 def scrub():
     global audio_regions
     global video_regions
@@ -34,8 +37,6 @@ def scrub():
     audio_frame_regions = ms_to_s(audio_regions)
     video_frame_regions = ms_to_s(video_regions)
 
-
-
     if video_path and timestamp_path and mask_path:
         # make sure there are regions to mask
         if audio_frame_regions:
@@ -44,6 +45,7 @@ def scrub():
             scrub_video()
     else:
         print "You need to load the video, mask and timestamp files before scrubbing"
+
 
 def scrub_audio():
 
@@ -55,24 +57,27 @@ def scrub_audio():
     # rather than the temp folder.
     if not video_frame_regions:
         command = ['ffmpeg',
-                '-i',
-                video_path,
-                '-af',
-                'volume=\'if({},0,1)\':eval=frame'.format(if_statements),
-                '-c:a', "aac",
-                '-strict', '-2',
-                output_path
-                ]
+                   '-i',
+                   video_path,
+                   # 'copy',
+                   '-af',
+                   'volume=\'if({},0,1)\':eval=frame'.format(if_statements),
+                   '-c:a', "aac",
+                   '-c:v', "copy",
+                   '-strict', '-2',
+                   output_path
+                   ]
     else:
         command = ['ffmpeg',
-                    '-i',
-                    video_path,
-                    '-af',
-                    'volume=\'if({},0,1)\':eval=frame'.format(if_statements),
-                    '-c:a', "aac",
-                    '-strict', '-2',
-                    "temp/audio_scrub_output.mp4"
-                    ]
+                   '-i',
+                   video_path,
+                   '-af',
+                   'volume=\'if({},0,1)\':eval=frame'.format(if_statements),
+                   '-c:a', "aac",
+                   '-c:v', "copy",
+                   '-strict', '-2',
+                   "temp/audio_scrub_output.mp4"
+                   ]
 
     command_string = ""
 
@@ -86,12 +91,13 @@ def scrub_audio():
 
     print "command: " + str(command)
 
+
 def scrub_video():
 
     between_statements = ""
 
     for index, region in enumerate(video_frame_regions):
-        statement = "between(t,{},{})".format(region[0],region[1])
+        statement = "between(t,{},{})".format(region[0], region[1])
         if index == len(video_frame_regions) - 1:
             between_statements += statement
         else:
@@ -100,30 +106,30 @@ def scrub_video():
     if not audio_frame_regions:
 
         command = ['ffmpeg',
-                '-i',
-                video_path,   # we're using the original input because there's no previous audio step
-                '-i',
-                mask_path,
-                '-filter_complex',
-                '\"[0:v][1:v] overlay=0:0:enable=\'{}\'\"'.format(between_statements),
-                '-pix_fmt',
-                'yuv420p',
-                '-c:a',
-                'copy',
-                output_path]
+                   '-i',
+                   video_path,   # we're using the original input because there's no previous audio step
+                   '-i',
+                   mask_path,
+                   '-filter_complex',
+                   '\"[0:v][1:v] overlay=0:0:enable=\'{}\'\"'.format(
+                       between_statements),
+                   '-pix_fmt',
+                   'yuv420p',
+                   '-c:a', 'copy',
+                   output_path]
     else:
         command = ['ffmpeg',
-                    '-i',
-                    'temp/audio_scrub_output.mp4',   # we're using the output from the audio scrub
-                    '-i',
-                    mask_path,
-                    '-filter_complex',
-                    '\"[0:v][1:v] overlay=0:0:enable=\'{}\'\"'.format(between_statements),
-                    '-pix_fmt',
-                    'yuv420p',
-                    '-c:a',
-                    'copy',
-                    output_path]
+                   '-i',
+                   'temp/audio_scrub_output.mp4',   # we're using the output from the audio scrub
+                   '-i',
+                   mask_path,
+                   '-filter_complex',
+                   '\"[0:v][1:v] overlay=0:0:enable=\'{}\'\"'.format(
+                       between_statements),
+                   '-pix_fmt',
+                   'yuv420p',
+                   '-c:a', 'copy',
+                   output_path]
 
     command_string = ""
 
@@ -139,6 +145,7 @@ def scrub_video():
         return
     else:
         os.remove("temp/audio_scrub_output.mp4")
+
 
 def build_audio_comparison_commands():
     """
@@ -156,7 +163,7 @@ def build_audio_comparison_commands():
     for index, region in enumerate(audio_frame_regions):
 
         statement = "gt(t,{})*lt(t,{})".format(region[0],
-                                                region[1])
+                                               region[1])
         if index == len(audio_frame_regions) - 1:
             if_statments += statement
         else:
@@ -164,6 +171,7 @@ def build_audio_comparison_commands():
 
     print if_statments
     return if_statments
+
 
 def ms_to_s(timestamps):
     """
@@ -179,15 +187,17 @@ def ms_to_s(timestamps):
     results = []
 
     for region in timestamps:
-        results.append([region[0]/1000, region[1]/1000])
+        results.append([region[0] / 1000, region[1] / 1000])
 
     print "results: " + str(results)
 
     return results
 
+
 def print_usage():
     print "USAGE: \n"
     print "$ python videoscrub.py input_video.mp4 censor_regions.csv mask_file.png output.mp4"
+
 
 if __name__ == "__main__":
 
