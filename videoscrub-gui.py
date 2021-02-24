@@ -1,5 +1,5 @@
-from Tkinter import *
-import tkFileDialog
+from tkinter import *
+import tkinter.filedialog
 
 import os
 import csv
@@ -64,19 +64,19 @@ class MainWindow:
 
 
     def load_video(self):
-        self.video_file = tkFileDialog.askopenfilename()
+        self.video_file = tkinter.filedialog.askopenfilename()
         self.video_filename = os.path.split(self.video_file)[1]
 
-        print "path split 0" + str(os.path.split(self.video_file)[0])
+        print("path split 0" + str(os.path.split(self.video_file)[0]))
         self.video_loaded_label.grid(row=3, column=1)
 
     def load_mask(self):
-        self.mask_path = tkFileDialog.askopenfilename()
+        self.mask_path = tkinter.filedialog.askopenfilename()
         self.mask_loaded_label.grid(row=3, column=4)
 
     def load_timestamps(self):
 
-        self.timestamp_path = tkFileDialog.askopenfilename()
+        self.timestamp_path = tkinter.filedialog.askopenfilename()
         self.timestamps_loaded_label.grid(row=3, column=3)
 
     def clear(self):
@@ -97,9 +97,9 @@ class MainWindow:
             self.timestamps_loaded_label.grid_remove()
 
     def scrub(self):
-        print self.timestamp_path
+        print(self.timestamp_path)
 
-        self.output_path = tkFileDialog.asksaveasfilename()
+        self.output_path = tkinter.filedialog.asksaveasfilename()
 
         with open(self.timestamp_path, "rU") as file:
             csvreader = csv.reader(file)
@@ -109,8 +109,8 @@ class MainWindow:
                 elif row[0] == "video":
                     self.video_regions.append([int(row[1]), int(row[2])])
 
-        print "audio regions: " + str(self.audio_regions)
-        print "video regions: " + str(self.video_regions)
+        print("audio regions: " + str(self.audio_regions))
+        print("video regions: " + str(self.video_regions))
 
         self.audio_frame_regions = self.ms_to_s(self.audio_regions)
         self.video_frame_regions = self.ms_to_s(self.video_regions)
@@ -121,11 +121,11 @@ class MainWindow:
             if self.video_frame_regions:
                 self.scrub_video()
         else:
-            print "You need to load the video, mask and timestamp files before scrubbing"
+            print("You need to load the video, mask and timestamp files before scrubbing")
 
     def scrub_audio(self):
 
-        print "scrubbing audio regions...."
+        print("scrubbing audio regions....")
 
         if_statements = self.build_audio_comparison_commands()
 
@@ -163,12 +163,12 @@ class MainWindow:
         for element in command:
             command_string += " " + element
 
-        print "command: " + command_string
+        print("command: " + command_string)
 
         pipe = sp.Popen(command, stdout=sp.PIPE, bufsize=10**8)
         pipe.communicate()  # blocks until the subprocess is complete
 
-        print "command: " + str(command)
+        print("command: " + str(command))
 
     def scrub_video(self):
 
@@ -213,7 +213,7 @@ class MainWindow:
         for element in command:
             command_string += " " + element
 
-        print "command: " + command_string
+        print("command: " + command_string)
 
         pipe = sp.Popen(command_string, stdout=sp.PIPE, bufsize=10**8, shell=True)
         pipe.communicate()  # blocks until the subprocess is complete
@@ -245,7 +245,7 @@ class MainWindow:
             else:
                 if_statments += statement + "+"
 
-        print if_statments
+        print(if_statments)
         return if_statments
 
 
@@ -265,7 +265,7 @@ class MainWindow:
         for region in timestamps:
             results.append([region[0]/1000, region[1]/1000])
 
-        print "results: " + str(results)
+        print("results: " + str(results))
 
         return results
 

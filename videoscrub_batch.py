@@ -4,8 +4,8 @@ import sys
 
 
 def print_usage():
-    print "USAGE: \n"
-    print "$ python videoscrub.py input_video_folder censor_regions_folder mask_file.png output_folder"
+    print("USAGE: \n")
+    print("$ python videoscrub.py input_video_folder censor_regions_folder mask_file.png output_folder")
 
 
 if __name__ == "__main__":

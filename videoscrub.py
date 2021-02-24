@@ -31,8 +31,8 @@ def scrub():
             elif row[0] == "video":
                 video_regions.append([int(row[1]), int(row[2])])
 
-    print "audio regions: " + str(audio_regions)
-    print "video regions: " + str(video_regions)
+    print("audio regions: " + str(audio_regions))
+    print("video regions: " + str(video_regions))
 
     audio_frame_regions = ms_to_s(audio_regions)
     video_frame_regions = ms_to_s(video_regions)
@@ -44,12 +44,12 @@ def scrub():
         if video_frame_regions:
             scrub_video()
     else:
-        print "You need to load the video, mask and timestamp files before scrubbing"
+        print("You need to load the video, mask and timestamp files before scrubbing")
 
 
 def scrub_audio():
 
-    print "scrubbing audio regions...."
+    print("scrubbing audio regions....")
 
     if_statements = build_audio_comparison_commands()
 
@@ -84,12 +84,12 @@ def scrub_audio():
     for element in command:
         command_string += " " + element
 
-    print "command: " + command_string
+    print("command: " + command_string)
 
     pipe = sp.Popen(command, stdout=sp.PIPE, bufsize=10**8)
     pipe.communicate()  # blocks until the subprocess is complete
 
-    print "command: " + str(command)
+    print("command: " + str(command))
 
 
 def scrub_video():
@@ -136,7 +136,7 @@ def scrub_video():
     for element in command:
         command_string += " " + element
 
-    print "command: " + command_string
+    print("command: " + command_string)
 
     pipe = sp.Popen(command_string, stdout=sp.PIPE, bufsize=10**8, shell=True)
     pipe.communicate()  # blocks until the subprocess is complete
@@ -169,7 +169,7 @@ def build_audio_comparison_commands():
         else:
             if_statments += statement + "+"
 
-    print if_statments
+    print(if_statments)
     return if_statments
 
 
@@ -189,14 +189,14 @@ def ms_to_s(timestamps):
     for region in timestamps:
         results.append([region[0] / 1000, region[1] / 1000])
 
-    print "results: " + str(results)
+    print("results: " + str(results))
 
     return results
 
 
 def print_usage():
-    print "USAGE: \n"
-    print "$ python videoscrub.py input_video.mp4 censor_regions.csv mask_file.png output.mp4"
+    print("USAGE: \n")
+    print("$ python videoscrub.py input_video.mp4 censor_regions.csv mask_file.png output.mp4")
 
 
 if __name__ == "__main__":
