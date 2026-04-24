@@ -23,7 +23,7 @@ def scrub():
     global audio_frame_regions
     global video_frame_regions
 
-    with open(timestamp_path, "rU") as file:
+    with open(timestamp_path, "r") as file:
         csvreader = csv.reader(file)
         for row in csvreader:
             if row[0] == "audio":
